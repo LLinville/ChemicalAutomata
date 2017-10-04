@@ -1,8 +1,12 @@
 class Atom(object):
-    def __init__(self, type, state):
+    def __init__(self, type, state, location):
         self.type = type
         self.state = state
+        self.location = location
         self.bonds = set({})
+
+    def getLocation(self):
+        return self.location
 
     def getType(self):
         return self.type

@@ -21,9 +21,10 @@ class Reactor(object):
 
     def react(self):
         hasReacted = [[False for x in range(self.sizeX)] for y in range(self.sizeY)]
+        directions = randomSearchOrder()
         for y, row in enumerate(self.cells):
             for x, cell in enumerate(row):
-                potentialReactionLocation = self.reactWithRandomDirection(cell, x, y, hasReacted)
+                potentialReactionLocation = self.reactWithRandomDirection(cell, x, y, hasReacted, directions)
                 if potentialReactionLocation is not None:
                     hasReacted[y][x] = True
                     hasReacted[potentialReactionLocation[1]][potentialReactionLocation[0]] = True
@@ -41,11 +42,18 @@ class Reactor(object):
 
     def move(self):
         newCells = [[None for x in range(self.sizeX)] for y in range(self.sizeY)]
-        for y, row in enumerate(self.cells):
-            for x, cell in enumerate(row):
+        directionOrder = randomSearchOrder5()
+        for y, row in enumerate(shuffled(self.cells)):
+            for x, cell in enumerate(shuffled(row)):
+                potentialDestination = self.getPotentialDestination(cell, directionOrder, newCells)
+                if potentialDestination is not None:
+                    newCells[potentialDestination[1]][potentialDestination[0]] = cell
+                else:
+                    newCells[y][x] = cell
+        self.cells = newCells
 
-    def reactWithRandomDirection(self, thisCell, x, y, cellsToIgnore):
-        directions = randomSearchOrder()
+
+    def reactWithRandomDirection(self, thisCell, x, y, cellsToIgnore, directions):
         if thisCell is None:
             return None
         for direction in directions:
@@ -67,6 +75,28 @@ class Reactor(object):
                 return x + direction[0], y + direction[1]
         return None
 
+largeOffsets = []
+for dx in [-2, -1, 0, 1, 2]:
+    for dy in [-2, -2, 0, 1, 2]:
+        if dx != 0 and dy != 0:
+            largeOffsets.append((dx, dy))
+
+def getPotentialDestination(self, cell, directionOrder, newCells):
+    x, y = cell.getLocation()
+    for direction in directionOrder:
+        potentialNewLocation = (x + direction[0], y + direction[1])
+        if self.cellAt(potentialNewLocation[0], potentialNewLocation[1]) is None and \
+                newCells[potentialNewLocation[1]][potentialNewLocation[0]] is None and \
+                not wouldOverstretchBonds(cell, potentialNewLocation):
+            return potentialNewLocation
+    return None
+
+def wouldOverstretchBonds(cell, potentialNewLocation):
+    for bondedAtom in cell.getBonds():
+        if abs(bondedAtom.getLocation()[0] - potentialNewLocation[0]) > 2 or abs(
+                        bondedAtom.getLocation()[1] - potentialNewLocation[1]) > 2:
+            return False
+    return True
 
 def randomSearchOrder():
     directions = [(-1, -1),
@@ -80,6 +110,15 @@ def randomSearchOrder():
     random.shuffle(directions)
     return directions
 
+def randomSearchOrder5():
+    offsets = largeOffsets[:]
+    random.shuffle(offsets)
+    return offsets
+
+def shuffled(input):
+    output = input[:]
+    random.shuffle(output)
+    return output
 
 def getReactionKey(self, reactant1, reactant2):
-    return str(reactant1.getType()) + str(reactant1.getState()) + str(reactant2.getType()) + str(reactant2.getState())])
+    return str(reactant1.getType()) + str(reactant1.getState()) + str(reactant2.getType()) + str(reactant2.getState())
