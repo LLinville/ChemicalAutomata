@@ -1,6 +1,8 @@
 import pygame
 
 # initialize game engine
+from reactor.Reactor import Reactor
+
 pygame.init()
 # set screen width/height and caption
 size = [640, 480]
@@ -9,7 +11,7 @@ pygame.display.set_caption('My Game')
 # initialize clock. used later in the loop.
 clock = pygame.time.Clock()
 
-
+reactor = Reactor((10, 10))
 
 
 def incrementState(reactor):
@@ -18,7 +20,8 @@ def incrementState(reactor):
     reactor.move()
 
 
-def drawState()
+def drawState():
+    pygame.draw()
 
 
 # Loop until the user clicks close button
@@ -31,7 +34,7 @@ while done == False:
     # write game logic here
 
     # clear the screen before drawing
-    incrementState()
+    incrementState(reactor)
     drawState()
     # write draw code here
 

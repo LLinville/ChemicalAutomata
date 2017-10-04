@@ -45,7 +45,7 @@ class Reactor(object):
         directionOrder = randomSearchOrder5()
         for y, row in enumerate(shuffled(self.cells)):
             for x, cell in enumerate(shuffled(row)):
-                potentialDestination = self.getPotentialDestination(cell, directionOrder, newCells)
+                potentialDestination = getPotentialDestination(cell, directionOrder, newCells)
                 if potentialDestination is not None:
                     newCells[potentialDestination[1]][potentialDestination[0]] = cell
                 else:
@@ -81,7 +81,7 @@ for dx in [-2, -1, 0, 1, 2]:
         if dx != 0 and dy != 0:
             largeOffsets.append((dx, dy))
 
-def getPotentialDestination(self, cell, directionOrder, newCells):
+def getPotentialDestination(cell, directionOrder, newCells):
     x, y = cell.getLocation()
     for direction in directionOrder:
         potentialNewLocation = (x + direction[0], y + direction[1])
