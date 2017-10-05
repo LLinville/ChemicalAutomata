@@ -12,6 +12,9 @@ class Reactor(object):
     def cellAt(self, x, y):
         return self.cells[y % self.sizeY][x % self.sizeX]
 
+    def getCells(self):
+        return self.cells
+
     def addReaction(self, reactant1, reactant2, reaction):
         self.reactions[getReactionKey(reactant1, reactant2)] = reaction
         self.reactions[getReactionKey(reactant2, reactant1)] = reaction.getMirroredReaction()
