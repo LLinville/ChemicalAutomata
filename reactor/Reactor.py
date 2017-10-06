@@ -9,6 +9,10 @@ class Reactor(object):
         self.reactions = {}
         self.antireactions = set({})
 
+    def addAtom(self, atom, location):
+        atom.setLocation(location)
+        self.cells[location[1] % self.sizeY][location[0] % self.sizeX] = atom
+
     def cellAt(self, x, y):
         return self.cells[y % self.sizeY][x % self.sizeX]
 
@@ -45,11 +49,16 @@ class Reactor(object):
 
     def move(self):
         newCells = [[None for x in range(self.sizeX)] for y in range(self.sizeY)]
-        directionOrder = randomSearchOrder5()
         for y, row in enumerate(shuffled(self.cells)):
             for x, cell in enumerate(shuffled(row)):
-                potentialDestination = getPotentialDestination(cell, directionOrder, newCells)
+                if cell is None:
+                    continue
+
+                directionOrder = randomSearchOrder5()
+                potentialDestination = self.getPotentialDestination(cell, directionOrder, newCells)
                 if potentialDestination is not None:
+                    #potentialDestination = (potentialDestination[0] % self.sizeX, potentialDestination[1] % self.sizeY)
+                    cell.setLocation(potentialDestination)
                     newCells[potentialDestination[1]][potentialDestination[0]] = cell
                 else:
                     newCells[y][x] = cell
@@ -60,12 +69,19 @@ class Reactor(object):
         if thisCell is None:
             return None
         for direction in directions:
-            if cellsToIgnore[y + direction[1]][x + direction[0]]:
+            potentialLocation = (x + direction[0], y + direction[1])
+            if not 0 <= potentialLocation[0] < self.sizeX or not 0 <= potentialLocation[1] < self.sizeY:
                 continue
 
-            potentialReactant = self.cellAt(x + direction[0], y + direction[1])
+            if cellsToIgnore[potentialLocation[1]][potentialLocation[0]]:
+                continue
+
+            potentialReactant = self.cellAt(potentialLocation[0], potentialLocation[1])
             if potentialReactant is None:
                 continue
+
+            if potentialReactant is thisCell:
+                print("Bonded with self!")
 
             reaction = self.reactions.get(thisCell.getReactionKey() + potentialReactant.getReactionKey())
             if reaction is not None:
@@ -78,28 +94,31 @@ class Reactor(object):
                 return x + direction[0], y + direction[1]
         return None
 
+    def getPotentialDestination(self, cell, directionOrder, newCells):
+        x, y = cell.getLocation()
+        for direction in directionOrder:
+            potentialNewLocation = (x + direction[0], y + direction[1])
+            if not 0 <= potentialNewLocation[0] < self.sizeX or not 0 <= potentialNewLocation[1] < self.sizeY:
+                continue
+            if self.cellAt(potentialNewLocation[0], potentialNewLocation[1]) is None and \
+                            newCells[potentialNewLocation[1]][potentialNewLocation[0]] is None and \
+                    not wouldOverstretchBonds(cell, potentialNewLocation):
+                return potentialNewLocation
+        return None
+
 largeOffsets = []
 for dx in [-2, -1, 0, 1, 2]:
     for dy in [-2, -2, 0, 1, 2]:
         if dx != 0 and dy != 0:
             largeOffsets.append((dx, dy))
 
-def getPotentialDestination(cell, directionOrder, newCells):
-    x, y = cell.getLocation()
-    for direction in directionOrder:
-        potentialNewLocation = (x + direction[0], y + direction[1])
-        if self.cellAt(potentialNewLocation[0], potentialNewLocation[1]) is None and \
-                newCells[potentialNewLocation[1]][potentialNewLocation[0]] is None and \
-                not wouldOverstretchBonds(cell, potentialNewLocation):
-            return potentialNewLocation
-    return None
 
 def wouldOverstretchBonds(cell, potentialNewLocation):
     for bondedAtom in cell.getBonds():
         if abs(bondedAtom.getLocation()[0] - potentialNewLocation[0]) > 2 or abs(
                         bondedAtom.getLocation()[1] - potentialNewLocation[1]) > 2:
-            return False
-    return True
+            return True
+    return False
 
 def randomSearchOrder():
     directions = [(-1, -1),
@@ -123,5 +142,5 @@ def shuffled(input):
     random.shuffle(output)
     return output
 
-def getReactionKey(self, reactant1, reactant2):
-    return str(reactant1.getType()) + str(reactant1.getState()) + str(reactant2.getType()) + str(reactant2.getState())
+def getReactionKey(reactant1, reactant2):
+    return str(reactant1[0]) + str(reactant1[1]) + str(reactant2[0]) + str(reactant2[1])

@@ -1,5 +1,5 @@
 class Atom(object):
-    def __init__(self, type, state, location):
+    def __init__(self, type, state, location=(0, 0)):
         self.type = type
         self.state = state
         self.location = location
@@ -7,6 +7,9 @@ class Atom(object):
 
     def getLocation(self):
         return self.location
+
+    def setLocation(self, location):
+        self.location = location
 
     def getType(self):
         return self.type
@@ -17,8 +20,8 @@ class Atom(object):
     def getState(self):
         return self.state
 
-    def setType(self, type):
-        self.type = type
+    def setState(self, state):
+        self.state = state
 
     def getReactionKey(self):
         return str(self.type) + str(self.state)
