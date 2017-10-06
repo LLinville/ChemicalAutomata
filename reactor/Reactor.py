@@ -10,8 +10,10 @@ class Reactor(object):
         self.antireactions = set({})
 
     def addAtom(self, atom, location):
+        if manhattanDist(atom.getLocation(), location) > 5 and atom.getLocation()[0] != 0 and atom.getLocation()[1] != 0:
+            print "Invalid move"
         atom.setLocation(location)
-        self.cells[location[1] % self.sizeY][location[0] % self.sizeX] = atom
+        self.cells[location[1]][location[0]] = atom
 
     def cellAt(self, x, y):
         return self.cells[y % self.sizeY][x % self.sizeX]
@@ -60,8 +62,12 @@ class Reactor(object):
                     #potentialDestination = (potentialDestination[0] % self.sizeX, potentialDestination[1] % self.sizeY)
                     cell.setLocation(potentialDestination)
                     newCells[potentialDestination[1]][potentialDestination[0]] = cell
+                    if manhattanDist(cell.getLocation(), potentialDestination) > 4:
+                        print "Moving too far"
                 else:
                     newCells[y][x] = cell
+
+
         self.cells = newCells
 
 
@@ -84,6 +90,9 @@ class Reactor(object):
                 print("Bonded with self!")
 
             reaction = self.reactions.get(thisCell.getReactionKey() + potentialReactant.getReactionKey())
+            if manhattanDist(thisCell.getLocation(), potentialReactant.getLocation()) > 5:
+                print "reacting with something too far away!"
+
             if reaction is not None:
                 productStates = reaction.getProductStates()
                 thisCell.setState(productStates[0])
@@ -144,3 +153,8 @@ def shuffled(input):
 
 def getReactionKey(reactant1, reactant2):
     return str(reactant1[0]) + str(reactant1[1]) + str(reactant2[0]) + str(reactant2[1])
+
+def manhattanDist(point1, point2):
+    if point1 is None or point2 is None:
+        print "finding dist between Nones"
+    return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])

@@ -49,6 +49,8 @@ def drawState():
     for y, row in enumerate(state):
         for x, cell in enumerate(row):
             if cell is not None:
+                if manhattanDist(cell.getLocation(), (x,y)) > 0:
+                    print("Cell isn't in the right place!")
                 pygame.draw.rect(screen, stateColors[cell.getType()][cell.getState()], getCellBoundingBox(x, y))
     
 def drawBonds():
@@ -61,7 +63,7 @@ def drawBonds():
                     bondedBox = getCellBoundingBox(bond.getLocation()[0], bond.getLocation()[1])
                     bondedCenter = (bondedBox[0] + bondedBox[2] / 2, bondedBox[1] + bondedBox[3] / 2)
                     pygame.draw.line(screen, (0,0,0), thisCenter, bondedCenter)
-                    if abs(cell.getLocation()[0] - bond.getLocation()[0]) + abs(cell.getLocation()[1] - bond.getLocation()[1]) > 5:
+                    if manhattanDist(cell.getLocation(), bond.getLocation()) > 5:
                         print("Giant bond")
 
 def getCellBoundingBox(x, y):
@@ -76,6 +78,9 @@ def colorWheel(hue, numberOfSaturations):
     saturations = [1.0 * n / (numberOfSaturations + 1) for n in range(numberOfSaturations + 1)]
     rgb = [colorsys.hsv_to_rgb(hue, saturation, 1) for saturation in saturations]
     return [(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)) for color in rgb[1:]]
+
+def manhattanDist(point1, point2):
+    return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
 stateColors = [colorWheel(1.0 * element / numElements, numStates) for element in range(numElements)]
 
