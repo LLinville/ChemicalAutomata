@@ -5,7 +5,7 @@ import random
 # initialize game engine
 from reactor.Atom import Atom
 from reactor.Reaction import Reaction
-from reactor.Reactor import Reactor
+from reactor.Reactor import Reactor, validateAtomLocations
 
 pygame.init()
 # set screen width/height and caption
@@ -21,17 +21,19 @@ numElements = 7
 numStates = 4
 reactorScreenLocation = (20, 20)
 
-reactor = Reactor((50, 50))
+reactor = Reactor((20, 20))
 
 startingAtoms = []
 reactor.addReaction("a1", "b1", "a0Xb0")
 reactor.addReaction("b0", "b1", "b2Xb0")
-reactor.addReaction("c1", "b0", "c0b3")
+reactor.addReaction("c1", "b0", "c0 b3")
 
-reactor.addAntireaction("b3", "b0", "b3", "b3")
+reactor.addAntireaction("b3", "b2", "b3", "b3")
 
-for a in range(20):
-    reactor.addAtom(Atom(random.choice([0, 1]), 1), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
+
+
+for a in range(1):
+    reactor.addAtom(Atom(0, 1), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
     #reactor.addAtom(Atom(random.randrange(numElements), random.randrange(numStates)), (random.randrange(10),random.randrange(10)))
 
 
@@ -52,12 +54,14 @@ for a in range(20):
 #     reactor.addAntireaction(random.choice("abcdefghijklmnopqrstuvwxyz"[:numElements]) + str(random.randrange(numStates)), random.choice("abcdefghijklmnopqrstuvwxyz"[:numElements]) + str(random.randrange(numStates)))
 
 def incrementState(reactor):
+    validateAtomLocations(reactor.getCells())
     reactor.react()
     reactor.removeBadBonds()
     reactor.move()
-    reactor.addAtom(Atom(1, 1),
-                    (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
-    if random.random() < 0.05:
+    if random.random() < 0.1:
+        reactor.addAtom(Atom(1, 1),
+                        (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
+    if random.random() < 0.01:
         reactor.addAtom(Atom(2, 1), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
 def drawState():
     screen.fill((255, 255, 255))
@@ -71,6 +75,7 @@ def drawState():
                     pygame.draw.rect(screen, stateColors[cell.getType()][cell.getState()], getCellBoundingBox(x, y))
                 except Exception:
                     print("exception")
+
 def drawBonds():
     for y, row in enumerate(reactor.getCells()):
         for x, cell in enumerate(row):

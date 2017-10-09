@@ -11,14 +11,17 @@ class Reactor(object):
         self.reactions = {}
         self.antireactions = {}
 
+        self.maxReactionDistance = 4
+        self.maxBondLength = 1
+        self.maxMoveDistance = 1
+
     def getSize(self):
         return self.sizeX, self.sizeY
 
     def addAtom(self, atom, location):
-        if manhattanDist(atom.getLocation(), location) > 5 and atom.getLocation()[0] != 0 and atom.getLocation()[1] != 0:
-            print("Invalid move")
-        atom.setLocation(location)
-        self.cells[location[1]][location[0]] = atom
+        if self.cellAt(location[0], location[1]) is None:
+            atom.setLocation(location)
+            self.cells[location[1]][location[0]] = atom
 
     def cellAt(self, x, y):
         return self.cells[y][x]
@@ -29,14 +32,17 @@ class Reactor(object):
     def addReaction(self, reactant1, reactant2, reaction):
         print(reactant1, reactant2, " -> ", reaction)
         shouldBond = reaction[2] == "X"
-        self.reactions[reactant1 + reactant2] = Reaction(int(reaction[1]), int(reaction[4]), shouldBond) if shouldBond else Reaction(int(reaction[1]), int(reaction[3]), shouldBond)
-        self.reactions[reactant2 + reactant1] = Reaction(int(reaction[4]), int(reaction[1]), shouldBond) if shouldBond else Reaction(int(reaction[3]), int(reaction[1]), shouldBond)
+        self.reactions[reactant1 + reactant2] = Reaction(int(reaction[1]), int(reaction[4]), shouldBond)
+        self.reactions[reactant2 + reactant1] = Reaction(int(reaction[4]), int(reaction[1]), shouldBond)
+
 
     def addAntireaction(self, key1, key2, product1, product2):
         print(key1 + " X " + key2)
         self.antireactions[key1 + key2] = product1 + product2
+        self.antireactions[key2 + key1] = product2 + product1
 
     def react(self):
+        validateAtomLocations(self.cells)
         hasReacted = [[False for x in range(self.sizeX)] for y in range(self.sizeY)]
         directions = randomSearchOrder()
         #directions = shuffled([(-1, 0), (1, 0), (0, -1), (0, 1)])
@@ -54,13 +60,13 @@ class Reactor(object):
                 if cell is None:
                     continue
                 for bondedAtom in list(cell.getBonds()):
-                    if cell.getReactionKey() + bondedAtom.getReactionKey() in self.antireactions.keys():
+                    product = cell.getReactionKey() + bondedAtom.getReactionKey()
+                    if product in self.antireactions.keys():
                         #Break bond
-                        product = cell.getReactionKey() + bondedAtom.getReactionKey()
                         cell.getBonds().remove(bondedAtom)
-                        cell.setState(self.antireactions[product][1])
+                        cell.setState(int(self.antireactions[product][1]))
                         bondedAtom.getBonds().remove(cell)
-                        bondedAtom.setState(self.antireactions[product][3])
+                        bondedAtom.setState(int(self.antireactions[product][3]))
         validateAtomLocations(self.cells)
 
     def move(self):
@@ -71,7 +77,7 @@ class Reactor(object):
                 cell = row[x]
                 if cell is None:
                     continue
-                validateAtomLocations(newCells)
+                #validateAtomLocations(newCells)
 
                 directionOrder = randomSearchOrder()
                 potentialDestination = self.getPotentialDestination(cell, directionOrder, newCells)
@@ -83,7 +89,7 @@ class Reactor(object):
                     newCells[potentialDestination[1]][potentialDestination[0]] = cell
                 else:
                     newCells[y][x] = cell
-                validateAtomLocations(newCells)
+                #validateAtomLocations(newCells)
 
 
         validateAtomLocations(newCells)
@@ -111,9 +117,11 @@ class Reactor(object):
             if potentialReactant is thisCell:
                 print("Bonded with self!")
 
-            reaction = self.reactions.get(thisCell.getReactionKey() + potentialReactant.getReactionKey())
-            if manhattanDist(thisCell.getLocation(), potentialReactant.getLocation()) > 5:
+            if manhattanDist(thisCell.getLocation(), potentialReactant.getLocation()) > self.maxReactionDistance:
                 print("reacting with something too far away!")
+                continue
+
+            reaction = self.reactions.get(thisCell.getReactionKey() + potentialReactant.getReactionKey())
 
             if reaction is not None:
                 productStates = reaction.getProductStates()
@@ -133,9 +141,16 @@ class Reactor(object):
                 continue
             if self.cellAt(potentialNewLocation[0], potentialNewLocation[1]) is None and \
                             newCells[potentialNewLocation[1]][potentialNewLocation[0]] is None and \
-                    not wouldOverstretchBonds(cell, potentialNewLocation):
+                    not self.wouldOverstretchBonds(cell, potentialNewLocation):
                 return potentialNewLocation
         return None
+
+    def wouldOverstretchBonds(self, cell, potentialNewLocation):
+        for bondedAtom in cell.getBonds():
+            if abs(bondedAtom.getLocation()[0] - potentialNewLocation[0]) > self.maxBondLength or abs(
+                            bondedAtom.getLocation()[1] - potentialNewLocation[1]) > self.maxBondLength:
+                return True
+        return False
 
 largeOffsets = []
 for dx in [-2, -1, 0, 1, 2]:
@@ -143,13 +158,6 @@ for dx in [-2, -1, 0, 1, 2]:
         if dx != 0 and dy != 0:
             largeOffsets.append((dx, dy))
 
-
-def wouldOverstretchBonds(cell, potentialNewLocation):
-    for bondedAtom in cell.getBonds():
-        if abs(bondedAtom.getLocation()[0] - potentialNewLocation[0]) > 2 or abs(
-                        bondedAtom.getLocation()[1] - potentialNewLocation[1]) > 2:
-            return True
-    return False
 
 def randomSearchOrder():
     directions = [(-1, -1),
@@ -188,3 +196,6 @@ def validateAtomLocations(cells):
                 continue
             if cell.getLocation()[0] != x or cell.getLocation()[1] != y:
                 print("locations don't match")
+            for boundAtom in cell.getBonds():
+                if cells[boundAtom.getLocation()[1]][boundAtom.getLocation()[0]] is not boundAtom:
+                    print("Bound to the wrong place")

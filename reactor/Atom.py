@@ -12,7 +12,7 @@ class Atom(object):
     def setLocation(self, location):
         if manhattanDist(self.getLocation(), location) > 5 and self.getLocation()[0] != 0 and self.getLocation()[1] != 0:
             print("Invalid move")
-        self.pastLocations.append(location)
+        #self.pastLocations.append(location)
         self.location = location
 
     def getType(self):
