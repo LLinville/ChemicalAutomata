@@ -26,9 +26,9 @@ reactor = Reactor((20, 20))
 startingAtoms = []
 reactor.addReaction("a1", "b1", "a0Xb0")
 reactor.addReaction("b0", "b1", "b2Xb0")
-reactor.addReaction("c1", "b0", "c0 b3")
+reactor.addReaction("c1", "b2", "c0Xb3")
 
-reactor.addAntireaction("b3", "b2", "b3", "b3")
+reactor.addAntireaction("b3", "b2", "b2", "b0")
 
 
 
