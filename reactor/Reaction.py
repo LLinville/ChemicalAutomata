@@ -13,3 +13,6 @@ class Reaction(object):
 
     def shouldBond(self):
         return self.bond
+
+    def toString(self):
+        return self.product1State, self.product2State

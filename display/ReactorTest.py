@@ -16,33 +16,49 @@ pygame.display.set_caption('My Game')
 clock = pygame.time.Clock()
 
 atomWidth = 7
-atomBorder = 1
-numElements = 2
+atomBorder = 2
+numElements = 7
 numStates = 4
 reactorScreenLocation = (20, 20)
 
-reactor = Reactor((20, 20))
+reactor = Reactor((50, 50))
 
-for x in range(10):
-    for y in range(10):
-        if random.random() < 0.3:
-            reactor.addAtom(Atom(random.randrange(numElements), random.randrange(numStates)), (x,y))
+startingAtoms = []
+reactor.addReaction("a1", "b1", "a0Xb0")
+reactor.addReaction("b0", "b1", "b2Xb0")
+reactor.addReaction("c1", "b0", "c0b3")
+
+reactor.addAntireaction("b3", "b0", "b3", "b3")
+
+for a in range(20):
+    reactor.addAtom(Atom(random.choice([0, 1]), 1), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
+    #reactor.addAtom(Atom(random.randrange(numElements), random.randrange(numStates)), (random.randrange(10),random.randrange(10)))
+
+
 
 # reactor.addAtom(Atom(0, 0), (5, 5))
 # reactor.addAtom(Atom(0, 0), (7, 9))
 # reactor.addAtom(Atom(0, 0), (9, 7))
 # reactor.addAtom(Atom(0, 0), (9, 9))
-for r in range(16):
-    reactor.addReaction((random.randrange(numElements), random.randrange(numStates)),
-                        (random.randrange(numElements), random.randrange(numStates)),
-                        Reaction(random.randrange(numStates), random.randrange(numStates), random.choice([True, False])))
-#reactor.addReaction((0,0), (0,0), Reaction(2, 2, True))
+# for reaction in range(26):
+#     reactant1 = random.choice("abcdefghijklmnopqrstuvwxyz"[:numElements]) + str(random.randrange(numStates))
+#     reactant2 = random.choice("abcdefghijklmnopqrstuvwxyz"[:numElements]) + str(random.randrange(numStates))
+#     reactor.addReaction(reactant1, reactant2, Reaction(
+#         reactant1[0] + str(random.randrange(numStates),
+#         reactant2[0] + str(random.randrange(numStates))),
+#         bond=random.choice([True, False])))
+#
+# for antireaction in range(5):
+#     reactor.addAntireaction(random.choice("abcdefghijklmnopqrstuvwxyz"[:numElements]) + str(random.randrange(numStates)), random.choice("abcdefghijklmnopqrstuvwxyz"[:numElements]) + str(random.randrange(numStates)))
 
 def incrementState(reactor):
     reactor.react()
     reactor.removeBadBonds()
     reactor.move()
-
+    reactor.addAtom(Atom(1, 1),
+                    (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
+    if random.random() < 0.05:
+        reactor.addAtom(Atom(2, 1), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
 def drawState():
     screen.fill((255, 255, 255))
     state = reactor.getCells()
@@ -51,8 +67,10 @@ def drawState():
             if cell is not None:
                 if manhattanDist(cell.getLocation(), (x,y)) > 0:
                     print("Cell isn't in the right place!")
-                pygame.draw.rect(screen, stateColors[cell.getType()][cell.getState()], getCellBoundingBox(x, y))
-    
+                try:
+                    pygame.draw.rect(screen, stateColors[cell.getType()][cell.getState()], getCellBoundingBox(x, y))
+                except Exception:
+                    print("exception")
 def drawBonds():
     for y, row in enumerate(reactor.getCells()):
         for x, cell in enumerate(row):
@@ -75,9 +93,9 @@ def getCellBoundingBox(x, y):
     )
 
 def colorWheel(hue, numberOfSaturations):
-    saturations = [1.0 * n / (numberOfSaturations + 1) for n in range(numberOfSaturations + 1)]
+    saturations = [1.0 * (n + 1) / (numberOfSaturations + 1) for n in range(numberOfSaturations + 1)]
     rgb = [colorsys.hsv_to_rgb(hue, saturation, 1) for saturation in saturations]
-    return [(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)) for color in rgb[1:]]
+    return [(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)) for color in rgb]
 
 def manhattanDist(point1, point2):
     return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
