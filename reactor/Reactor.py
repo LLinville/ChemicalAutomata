@@ -9,12 +9,26 @@ class Reactor(object):
         self.sizeY = size[1]
         self.cells = [[None for x in range(self.sizeX)] for y in range(self.sizeY)]
         self.reactions = {}
-        self.antireactions = {}
 
-        self.maxReactionDistance = 5
-        self.maxBondLength = 5
+        self.maxReactionDistance = 4
+        self.maxBondLength = 3
         self.maxMoveDistance = 2
-        self.maxBonds = 3
+        self.maxBonds = 4
+
+        self.numElements = 0
+        self.numStates = 0
+        
+    def getNumElements(self):
+        return self.numElements
+    
+    def setNumElements(self, numElements):
+        self.numElements = numElements
+
+    def getNumStates(self):
+        return self.numStates
+
+    def setNumStates(self, numStates):
+        self.numStates = numStates
 
     def getSize(self):
         return self.sizeX, self.sizeY
@@ -32,17 +46,46 @@ class Reactor(object):
     def getCells(self):
         return self.cells
 
-    def addReaction(self, reactant1, reactant2, reaction):
-        print(reactant1, reactant2, " -> ", reaction)
-        shouldBond = reaction[2] == "X"
-        self.reactions[reactant1 + reactant2] = Reaction(int(reaction[1]), int(reaction[4]), shouldBond)
-        self.reactions[reactant2 + reactant1] = Reaction(int(reaction[4]), int(reaction[1]), shouldBond)
+    def addReaction(self, reactants, products):
+        wasBonded = reactants[2] is not " "
+        shouldBond = products[2] is not " "
+        for startState, endState in self.parseReaction(reactants, products):
+            self.reactions[startState] = Reaction(endState[1], endState[-1], shouldBond)
+            self.reactions[startState[-2:] + (" " if wasBonded == " " else "") + startState[:2]] = self.reactions[startState].getMirroredReaction()
 
+    def parseReaction(self, reactants, products):
+        reactantAndProductOptions = []
+        reactant1 = reactants[:2]
+        reactant2 = reactants[-2:]
+        wasBonded = reactants[2] is not " "
 
-    def addAntireaction(self, key1, key2, product1, product2):
-        print(key1 + " X " + key2)
-        self.antireactions[key1 + key2] = product1 + product2
-        self.antireactions[key2 + key1] = product2 + product1
+        product1 = products[:2]
+        product2 = products[-2:]
+        shouldBond = products[2] is not " "
+
+        elementOptions = [element for element in "abcdefghijklmnopqrstuvwxyz"[:self.numElements]]
+        validElements = []
+
+        if reactant1[0] == "x":
+            for element in elementOptions:
+                validElements.append(element)
+        else:
+            validElements.append(reactant1[0])
+
+        validElementPairs = []
+        if reactant2[0] == "x":
+            validElementPairs = [(element, element) for element in validElements]
+        elif reactant2[0] == "y":
+            # validElementPairs = [(element1, element2) for element1 in validElements for element2 in filter(lambda x: x is not element1, validElements)]
+            validElementPairs = [(element1, element2) for element1 in validElements for element2 in validElements]
+        else:
+            validElementPairs = [(reactant1[0], reactant2[0])]
+
+        for elementPair in validElementPairs:
+            reactantAndProductOptions.append((elementPair[0] + reactant1[1] + ("" if wasBonded else " ") + elementPair[1] + reactant2[1],
+                                              elementPair[0] + product1[1] + ("" if shouldBond else " ") + elementPair[1] + product2[1]))
+
+        return reactantAndProductOptions
 
     def react(self):
         hasReacted = [[False for x in range(self.sizeX)] for y in range(self.sizeY)]
@@ -55,20 +98,20 @@ class Reactor(object):
                     hasReacted[y][x] = True
                     hasReacted[potentialReactionLocation[1]][potentialReactionLocation[0]] = True
 
-    def removeBadBonds(self):
-        for y, row in enumerate(self.cells):
-            for x, cell in enumerate(row):
-                if cell is None:
-                    continue
-                for bondedAtom in list(cell.getBonds()):
-                    product = cell.getReactionKey() + bondedAtom.getReactionKey()
-                    if product in self.antireactions.keys():
-                        #Break bond
-                        cell.getBonds().remove(bondedAtom)
-                        cell.setState(int(self.antireactions[product][1]))
-                        bondedAtom.getBonds().remove(cell)
-                        bondedAtom.setState(int(self.antireactions[product][3]))
-        validateAtomLocations(self.cells)
+    # def removeBadBonds(self):
+    #     for y, row in enumerate(self.cells):
+    #         for x, cell in enumerate(row):
+    #             if cell is None:
+    #                 continue
+    #             for bondedAtom in list(cell.getBonds()):
+    #                 product = cell.getReactionKey() + bondedAtom.getReactionKey()
+    #                 if product in self.antireactions.keys():
+    #                     #Break bond
+    #                     cell.getBonds().remove(bondedAtom)
+    #                     cell.setState(int(self.antireactions[product][1]))
+    #                     bondedAtom.getBonds().remove(cell)
+    #                     bondedAtom.setState(int(self.antireactions[product][3]))
+    #     validateAtomLocations(self.cells)
 
     def move(self):
         newCells = [[None for x in range(self.sizeX)] for y in range(self.sizeY)]
@@ -111,8 +154,8 @@ class Reactor(object):
             if potentialReactant is None:
                 continue
 
-            if potentialReactant in thisCell.getBonds():
-                continue
+            # if potentialReactant in thisCell.getBonds():
+            #     continue
 
             if potentialReactant is thisCell:
                 print("Bonded with self!")
@@ -121,15 +164,26 @@ class Reactor(object):
                 print("reacting with something too far away!")
                 continue
 
-            reaction = self.reactions.get(thisCell.getReactionKey() + potentialReactant.getReactionKey())
+            if potentialReactant in thisCell.getBonds():
+                reactionKey = thisCell.getReactionKey() + potentialReactant.getReactionKey()
+                reaction = self.reactions.get(reactionKey)
+            else:
+                reactionKey = thisCell.getReactionKey() + " " + potentialReactant.getReactionKey()
+                reaction = self.reactions.get(reactionKey)
 
             if reaction is not None:
                 productStates = reaction.getProductStates()
-                thisCell.setState(productStates[0])
-                potentialReactant.setState(productStates[1])
+                print(reactionKey + " -> " +
+                      reactionKey[0] + productStates[0] +
+                      ("" if reaction.shouldBond() else " ") +
+                      reactionKey[-2] + productStates[1])
+                thisCell.setState(int(productStates[0]))
+                potentialReactant.setState(int(productStates[1]))
                 if reaction.shouldBond() and len(thisCell.getBonds()) <= self.maxBonds and len(potentialReactant.getBonds()) <= self.maxBonds:
                     thisCell.bondWith(potentialReactant)
-                    potentialReactant.bondWith(thisCell)
+                elif not reaction.shouldBond() and potentialReactant in thisCell.getBonds():
+                    thisCell.getBonds().remove(potentialReactant)
+                    potentialReactant.getBonds().remove(thisCell)
                 return potentialLocation
         return None
 
@@ -169,6 +223,14 @@ class Reactor(object):
                       (1, 1)]
         random.shuffle(directions)
         return directions
+
+    def printReactions(self):
+        reactionStrings = []
+        for start in self.reactions.keys():
+            products = self.reactions[start].getProductStates()
+            end = start[0] + products[0] + ("" if self.reactions[start].shouldBond() else " ") + start[-2] + products[1]
+            reactionStrings.append((start + " -> " + end))
+        print("\n".join(sorted(reactionStrings)))
 
 def manhattanDist(point1, point2):
     if point1 is None or point2 is None:

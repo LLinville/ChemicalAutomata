@@ -35,8 +35,9 @@ class Atom(object):
         return self.bonds
 
     def bondWith(self, atom):
-        self.justBonded = 10
+        self.justBonded = 0
         self.bonds.add(atom)
+        atom.getBonds().add(self)
 
     def getJustBonded(self):
         return self.justBonded
