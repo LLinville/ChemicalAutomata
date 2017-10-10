@@ -11,9 +11,10 @@ class Reactor(object):
         self.reactions = {}
         self.antireactions = {}
 
-        self.maxReactionDistance = 4
-        self.maxBondLength = 1
-        self.maxMoveDistance = 1
+        self.maxReactionDistance = 5
+        self.maxBondLength = 5
+        self.maxMoveDistance = 2
+        self.maxBonds = 3
 
     def getSize(self):
         return self.sizeX, self.sizeY
@@ -24,6 +25,8 @@ class Reactor(object):
             self.cells[location[1]][location[0]] = atom
 
     def cellAt(self, x, y):
+        if x < 0 or x >= self.sizeX or y < 0 or y >= self.sizeY:
+            return None
         return self.cells[y][x]
 
     def getCells(self):
@@ -42,9 +45,8 @@ class Reactor(object):
         self.antireactions[key2 + key1] = product2 + product1
 
     def react(self):
-        validateAtomLocations(self.cells)
         hasReacted = [[False for x in range(self.sizeX)] for y in range(self.sizeY)]
-        directions = randomSearchOrder()
+        directions = getOffsetsForDist(self.maxReactionDistance)
         #directions = shuffled([(-1, 0), (1, 0), (0, -1), (0, 1)])
         for y, row in enumerate(self.cells):
             for x, cell in enumerate(row):
@@ -52,7 +54,6 @@ class Reactor(object):
                 if potentialReactionLocation is not None:
                     hasReacted[y][x] = True
                     hasReacted[potentialReactionLocation[1]][potentialReactionLocation[0]] = True
-        validateAtomLocations(self.cells)
 
     def removeBadBonds(self):
         for y, row in enumerate(self.cells):
@@ -79,12 +80,11 @@ class Reactor(object):
                     continue
                 #validateAtomLocations(newCells)
 
-                directionOrder = randomSearchOrder()
+                directionOrder = shuffled(getOffsetsForDist(2))
+
                 potentialDestination = self.getPotentialDestination(cell, directionOrder, newCells)
                 if potentialDestination is not None:
                     #potentialDestination = (potentialDestination[0] % self.sizeX, potentialDestination[1] % self.sizeY)
-                    if abs(cell.getLocation()[0] - potentialDestination[0]) > 2 or abs(cell.getLocation()[1] - potentialDestination[1]) > 2:
-                        print("Moving too far")
                     cell.setLocation(potentialDestination)
                     newCells[potentialDestination[1]][potentialDestination[0]] = cell
                 else:
@@ -127,7 +127,7 @@ class Reactor(object):
                 productStates = reaction.getProductStates()
                 thisCell.setState(productStates[0])
                 potentialReactant.setState(productStates[1])
-                if reaction.shouldBond():
+                if reaction.shouldBond() and len(thisCell.getBonds()) <= self.maxBonds and len(potentialReactant.getBonds()) <= self.maxBonds:
                     thisCell.bondWith(potentialReactant)
                     potentialReactant.bondWith(thisCell)
                 return potentialLocation
@@ -147,16 +147,33 @@ class Reactor(object):
 
     def wouldOverstretchBonds(self, cell, potentialNewLocation):
         for bondedAtom in cell.getBonds():
-            if abs(bondedAtom.getLocation()[0] - potentialNewLocation[0]) > self.maxBondLength or abs(
-                            bondedAtom.getLocation()[1] - potentialNewLocation[1]) > self.maxBondLength:
+            if potentialNewLocation in randomSearchOrder():
+                continue
+            if manhattanDist(bondedAtom.getLocation(), potentialNewLocation) > self.maxBondLength:
                 return True
         return False
 
-largeOffsets = []
-for dx in [-2, -1, 0, 1, 2]:
-    for dy in [-2, -2, 0, 1, 2]:
-        if dx != 0 and dy != 0:
-            largeOffsets.append((dx, dy))
+    def manhattanDist(self, point1, point2):
+        if point1 is None or point2 is None:
+            print("finding dist between Nones")
+        return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
+
+    def randomSearchOrder(self):
+        directions = [(-1, -1),
+                      (-1, 0),
+                      (-1, 1),
+                      (0, -1),
+                      (0, 1),
+                      (1, -1),
+                      (1, 0),
+                      (1, 1)]
+        random.shuffle(directions)
+        return directions
+
+def manhattanDist(point1, point2):
+    if point1 is None or point2 is None:
+        print("finding dist between Nones")
+    return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
 
 def randomSearchOrder():
@@ -171,8 +188,16 @@ def randomSearchOrder():
     random.shuffle(directions)
     return directions
 
+def getOffsetsForDist(dist):
+    largeOffsets = []
+    for dx in range(-dist + 1, dist):
+        for dy in range(-dist + 1, dist):
+            if (dx, dy) not in [(0, 0)] and manhattanDist((0, 0), (dx, dy)) <= dist:
+                largeOffsets.append((dx, dy))
+    return largeOffsets
+
 def randomSearchOrder5():
-    offsets = largeOffsets[:]
+    offsets = getOffsetsForDist(2)
     random.shuffle(offsets)
     return offsets
 
@@ -183,11 +208,6 @@ def shuffled(input):
 
 def getReactionKey(reactant1, reactant2):
     return "abcdefghijklmnopqrstuvwxyz"[reactant1[0]] + str(reactant1[1]) + "abcdefghijklmnopqrstuvwxyz"[reactant2[0]] + str(reactant2[1])
-
-def manhattanDist(point1, point2):
-    if point1 is None or point2 is None:
-        print("finding dist between Nones")
-    return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
 def validateAtomLocations(cells):
     for y, row in enumerate(cells):

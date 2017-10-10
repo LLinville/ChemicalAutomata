@@ -5,6 +5,7 @@ class Atom(object):
         self.location = location
         self.bonds = set({})
         self.pastLocations = [location]
+        self.justBonded = 0
 
     def getLocation(self):
         return self.location
@@ -34,7 +35,14 @@ class Atom(object):
         return self.bonds
 
     def bondWith(self, atom):
+        self.justBonded = 10
         self.bonds.add(atom)
+
+    def getJustBonded(self):
+        return self.justBonded
+
+    def setJustBonded(self, state):
+        self.justBonded = state
 
 def manhattanDist(point1, point2):
     if point1 is None or point2 is None:
