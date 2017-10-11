@@ -1,6 +1,8 @@
 import random
 from reactor.Reaction import Reaction
 
+import networkx as nx
+
 class Reactor(object):
 
     def __init__(self, size):
@@ -17,6 +19,21 @@ class Reactor(object):
 
         self.numElements = 0
         self.numStates = 0
+
+        self.nextAtomId = 0
+
+        self.bondGraph = nx.Graph()
+        self.atomsById = []
+
+    def newAtomId(self):
+        self.nextAtomId += 1
+        return self.nextAtomId - 1
+
+    def getAtomsById(self):
+        return self.atomsById
+
+    def getBondGraph(self):
+        return self.bondGraph
 
     def getReactions(self):
         return self.reactions
@@ -39,6 +56,10 @@ class Reactor(object):
     def addAtom(self, atom, location):
         if self.cellAt(location[0], location[1]) is None:
             atom.setLocation(location)
+            atom.setId(self.newAtomId())
+            self.atomsById.append(atom)
+            self.bondGraph.add_node(atom.getId())
+
             self.cells[location[1]][location[0]] = atom
 
     def cellAt(self, x, y):
@@ -57,6 +78,9 @@ class Reactor(object):
             self.reactions[startState[-2:] + ("" if wasBonded else " ") + startState[:2]] = self.reactions[startState].getMirroredReaction()
             print(startState + " -> " + endState)
         print("-" * 20)
+
+    def setReaction(self, reactants, reaction):
+        self.reactions[reactants] = reaction
 
     def removeReaction(self, reactants):
         self.reactions.pop(reactants)
@@ -84,8 +108,9 @@ class Reactor(object):
         if reactant2[0] == "x":
             validElementPairs = [(element, element) for element in validElements]
         elif reactant2[0] == "y":
+            validElementPairs = [(element1, element2) for element1 in validElements for element2 in validElements]
+        elif reactant2[0] == "z":
             validElementPairs = [(element1, element2) for element1 in validElements for element2 in filter(lambda x: x is not element1, validElements)]
-            #validElementPairs = [(element1, element2) for element1 in validElements for element2 in validElements]
         else:
             validElementPairs = [(reactant1[0], reactant2[0])]
 
@@ -182,16 +207,25 @@ class Reactor(object):
             if reaction is not None:
                 productStates = reaction.getProductStates()
                 print(reactionKey + " -> " +
-                      reactionKey[0] + productStates[0] +
+                      reactionKey[0] + str(productStates[0]) +
                       ("" if reaction.shouldBond() else " ") +
-                      reactionKey[-2] + productStates[1])
+                      reactionKey[-2] + str(productStates[1]))
+
                 thisCell.setState(int(productStates[0]))
                 potentialReactant.setState(int(productStates[1]))
-                if reaction.shouldBond() and len(thisCell.getBonds()) <= self.maxBonds and len(potentialReactant.getBonds()) <= self.maxBonds:
+
+                if reaction.shouldBond() and \
+                        not potentialReactant in thisCell.getBonds() and \
+                        len(thisCell.getBonds()) <= self.maxBonds and \
+                        len(potentialReactant.getBonds()) <= self.maxBonds:
+
                     thisCell.bondWith(potentialReactant)
+                    self.bondGraph.add_edge(thisCell.getId(), potentialReactant.getId())
                 elif not reaction.shouldBond() and potentialReactant in thisCell.getBonds():
                     thisCell.getBonds().remove(potentialReactant)
                     potentialReactant.getBonds().remove(thisCell)
+                    self.bondGraph.remove_edge(thisCell.getId(), potentialReactant.getId())
+
                 return potentialLocation
         return None
 

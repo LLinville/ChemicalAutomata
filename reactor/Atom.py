@@ -1,11 +1,18 @@
 class Atom(object):
-    def __init__(self, type, state, location=(0, 0)):
+    def __init__(self, type, state, location=(0, 0), id = 0):
         self.type = type
         self.state = state
         self.location = location
         self.bonds = set({})
         self.pastLocations = [location]
         self.justBonded = 0
+        self.id = id
+
+    def setId(self, atomId):
+        self.id = atomId
+
+    def getId(self):
+        return self.id
 
     def getLocation(self):
         return self.location

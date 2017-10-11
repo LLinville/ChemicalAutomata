@@ -1,6 +1,11 @@
 import pygame
 import colorsys
 import random
+import networkx as nx
+import matplotlib.pyplot as plt
+import networkx as nx
+import pylab
+pylab.ion()
 
 # initialize game engine
 from reactor.Atom import Atom
@@ -16,7 +21,7 @@ atomBorder = 0
 
 reactorScreenLocation = (0, 0)
 
-reactor = Reactor((100, 100))
+reactor = Reactor((50, 50))
 reactor.setNumElements(5)
 reactor.setNumStates(8)
 numElements = reactor.getNumElements()
@@ -48,7 +53,8 @@ startingAtoms = []
 # reactor.addAtom(Atom(0, 0), (9, 7))
 # reactor.addAtom(Atom(0, 0), (9, 9))
 def initiateReactorDuplicator(reactor):
-    elementSequence = [1, 2]
+    elementSequence = "cd"
+    elementSequence = [ord(element) - ord("a") for element in elementSequence]
 
     # reactor.addReaction("a8 a0", "a4a3")
     # reactor.addReaction("x4y1", "x2y5")
@@ -79,21 +85,53 @@ def initiateReactorDuplicator(reactor):
     # reactor.addReaction("x0x0", "x1 y1")
     # reactor.addReaction("e2e2", "e4e4")
 
-    reactor.addReaction("x1 x5", "x2x2")
-    reactor.addReaction("a3a3", "a6a6")
-    reactor.addReaction("x5x6", "x6x6")
-    reactor.addReaction("x5x7", "x7x7")
-    reactor.addReaction("x6x7", "x0y0")
-    reactor.addReaction("x2 x2", "x3x3")
+    # reactor.addReaction("x1 x5", "x4x2")
+    # reactor.addReaction("a3a3", "a6a6")
+    # reactor.addReaction("x5x6", "x6x6")
+    # reactor.addReaction("x5x7", "x7x7")
+    # reactor.addReaction("x6x7", "x0y0")
+    # reactor.addReaction("x2 x2", "x3x3")
+    # reactor.addReaction("x2 y2", "x3y3")
+    # reactor.addReaction("x2 y3", "x3x4")
+    # for i in range(numStates):
+    #     reactor.removeReaction("e" + str(i) + " e3")
+    # reactor.addReaction("x3 y3", "x4x4")
+    # reactor.addReaction("x0y5", "x0y0")
+    # reactor.addReaction("x0y6", "x0y0")
+    # reactor.addReaction("x0x0", "x1 y1")
+    # reactor.addReaction("e4e4", "e7e7")
+    #
+
+    """
+    0 - unpaired food
+    1 - backbone ready to pair
+    2 - paired but needs two neighbors
+    3 - paired but needs one neighbor
+    4 - paired and needs no neighbors
+    5 - backbone paired
+    6 - backbone done pairing
+    7 - head unzip signal
+    8 - unzipping from tail
+    
+    """
+    reactor.addReaction("x1 x0", "x5x2")
+    reactor.setReaction("a1 a0", Reaction(6, 3, True))
+    reactor.setReaction("a0 a1", Reaction(3, 6, True))
+
     reactor.addReaction("x2 y2", "x3y3")
-    reactor.addReaction("x2 y3", "x3x4")
-    for i in range(numStates):
-        reactor.removeReaction("e" + str(i) + " e3")
-    reactor.addReaction("x3 y3", "x4x4")
-    reactor.addReaction("x0y5", "x0y0")
-    reactor.addReaction("x0y6", "x0y0")
-    reactor.addReaction("x0x0", "x1 y1")
-    reactor.addReaction("e3e3", "e7e7")
+    reactor.addReaction("x2 y3", "x3y4")
+    reactor.addReaction("x3 y3", "x4y4")
+    reactor.addReaciton("x5x4", "x6x4")
+
+    reactor.addReaction("x7y6", "x7y7")
+    reactor.setReaction("b6y6", "b7y7")
+    reactor.setReaction
+
+
+    numElements = max(elementSequence) + 1 + 1
+    reactor.setNumElements(numElements)
+    numStates = 9
+    reactor.setNumStates(numStates)
 
 
     # lastElement = "abcdefghijklmnopqrstuvw"[elementSequence[-1]]
@@ -109,15 +147,16 @@ def initiateReactorDuplicator(reactor):
     atoms = [Atom(0, 1)]
     for element in elementSequence:
         atoms.append(Atom(element, 1))
-    atoms.append(Atom(numElements - 1, 1))
+    atoms.append(Atom(1, 1))
 
+    for i, atom in enumerate(atoms):
+        reactor.addAtom(atom, (reactor.getSize()[0] // 2, reactor.getSize()[1] // 2 + 2 * i))
     for i in range(len(atoms) - 1):
         atoms[i].bondWith(atoms[i+1])
-    for i, atom in enumerate(atoms):
-        reactor.addAtom(atom, (50, 50 + 2 * i))
+        reactor.getBondGraph().add_edge(atoms[i].getId(), atoms[i+1].getId())
 
     for atom in range(300):
-        reactor.addAtom(Atom(random.randrange(numElements), 5), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
+        reactor.addAtom(Atom(random.randrange(numElements), 0), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
 
 def initiateReactor(reactor):
     initiateReactorDuplicator(reactor)
@@ -131,7 +170,7 @@ def incrementState(reactor):
     if sum([sum([0 if cell is None else 1 for cell in row]) for row in reactor.getCells()]) < reactor.getSize()[0] * reactor.getSize()[1] / 8:
         # reactor.addAtom(Atom(random.randrange(numElements), random.randrange(numStates)),
         #                 (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
-        reactor.addAtom(Atom(random.randrange(numElements), 5),
+        reactor.addAtom(Atom(random.randrange(numElements), 0),
                         (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
     if random.random() < 0:
         reactor.addAtom(Atom(2, 5), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
@@ -200,6 +239,8 @@ stateColors = [colorWheel(1.0 * element / reactor.getNumElements(), reactor.getN
 # Loop until the user clicks close button
 done = False
 initiateReactor(reactor)
+
+pylab.show()
 while done == False:
     # write event handlers here
     for event in pygame.event.get():
@@ -212,6 +253,15 @@ while done == False:
 
     if not keysdown[pygame.K_SPACE]:
         incrementState(reactor)
+        pylab.clf()
+        nodeDegrees = reactor.getBondGraph().degree()
+        nodesToDraw = [nodeIndex for nodeIndex in nodeDegrees if nodeDegrees[nodeIndex] > 0]
+        nx.draw_networkx(
+            reactor.getBondGraph(),
+            nodelist=nodesToDraw,
+            labels=dict((atom.getId(), atom.getReactionKey()) for atom in reactor.getAtomsById() if atom.getId() in nodesToDraw))
+        pylab.draw()
+        plt.pause(1)
         drawState()
         drawBonds()
 
