@@ -10,14 +10,17 @@ class Reactor(object):
         self.cells = [[None for x in range(self.sizeX)] for y in range(self.sizeY)]
         self.reactions = {}
 
-        self.maxReactionDistance = 4
-        self.maxBondLength = 3
-        self.maxMoveDistance = 2
-        self.maxBonds = 4
+        self.maxReactionDistance = 5
+        self.maxBondLength = 5
+        self.maxMoveDistance = 1
+        self.maxBonds = 40
 
         self.numElements = 0
         self.numStates = 0
-        
+
+    def getReactions(self):
+        return self.reactions
+
     def getNumElements(self):
         return self.numElements
     
@@ -51,7 +54,12 @@ class Reactor(object):
         shouldBond = products[2] is not " "
         for startState, endState in self.parseReaction(reactants, products):
             self.reactions[startState] = Reaction(endState[1], endState[-1], shouldBond)
-            self.reactions[startState[-2:] + (" " if wasBonded == " " else "") + startState[:2]] = self.reactions[startState].getMirroredReaction()
+            self.reactions[startState[-2:] + ("" if wasBonded else " ") + startState[:2]] = self.reactions[startState].getMirroredReaction()
+            print(startState + " -> " + endState)
+        print("-" * 20)
+
+    def removeReaction(self, reactants):
+        self.reactions.pop(reactants)
 
     def parseReaction(self, reactants, products):
         reactantAndProductOptions = []
@@ -76,8 +84,8 @@ class Reactor(object):
         if reactant2[0] == "x":
             validElementPairs = [(element, element) for element in validElements]
         elif reactant2[0] == "y":
-            # validElementPairs = [(element1, element2) for element1 in validElements for element2 in filter(lambda x: x is not element1, validElements)]
-            validElementPairs = [(element1, element2) for element1 in validElements for element2 in validElements]
+            validElementPairs = [(element1, element2) for element1 in validElements for element2 in filter(lambda x: x is not element1, validElements)]
+            #validElementPairs = [(element1, element2) for element1 in validElements for element2 in validElements]
         else:
             validElementPairs = [(reactant1[0], reactant2[0])]
 
