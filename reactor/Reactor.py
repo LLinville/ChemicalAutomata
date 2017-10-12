@@ -12,8 +12,8 @@ class Reactor(object):
         self.cells = [[None for x in range(self.sizeX)] for y in range(self.sizeY)]
         self.reactions = {}
 
-        self.maxReactionDistance = 5
-        self.maxBondLength = 5
+        self.maxReactionDistance = 4
+        self.maxBondLength = 4
         self.maxMoveDistance = 1
         self.maxBonds = 40
 

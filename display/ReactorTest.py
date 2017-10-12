@@ -22,10 +22,6 @@ atomBorder = 0
 reactorScreenLocation = (0, 0)
 
 reactor = Reactor((50, 50))
-reactor.setNumElements(5)
-reactor.setNumStates(8)
-numElements = reactor.getNumElements()
-numStates = reactor.getNumStates()
 
 # set screen width/height and caption
 size = [reactor.getSize()[0] * (atomWidth + atomBorder),
@@ -112,25 +108,40 @@ def initiateReactorDuplicator(reactor):
     6 - backbone done pairing
     7 - head unzip signal
     8 - unzipping from tail
+    9 - unzipped waiting for head
     
     """
     reactor.addReaction("x1 x0", "x5x2")
-    reactor.setReaction("a1 a0", Reaction(6, 3, True))
-    reactor.setReaction("a0 a1", Reaction(3, 6, True))
+    reactor.setReaction("a1 a0", Reaction(5, 3, True))
+    reactor.setReaction("a0 a1", Reaction(3, 5, True))
+    reactor.setReaction("b1 b0", Reaction(5, 3, True))
+    reactor.setReaction("b0 b1", Reaction(3, 5, True))
 
     reactor.addReaction("x2 y2", "x3y3")
     reactor.addReaction("x2 y3", "x3y4")
     reactor.addReaction("x3 y3", "x4y4")
-    reactor.addReaciton("x5x4", "x6x4")
+    reactor.addReaction("x5x4", "x6x4")
+
+    reactor.addReaction("a6a4", "a7a4")
 
     reactor.addReaction("x7y6", "x7y7")
-    reactor.setReaction("b6y6", "b7y7")
-    reactor.setReaction
+    reactor.addReaction("b7b4", "b8b4")
+    reactor.addReaction("x8y7", "x8y8")
+    reactor.addReaction("x8y9", "x9y9")
+    reactor.addReaction("x1y4", "x1y1")
+    reactor.addReaction("x9a7", "x9a1")
+
+    reactor.setReaction("a9a4", Reaction(1, 1, False))
+    reactor.setReaction("a4a9", Reaction(1, 1, False))
+
+    reactor.addReaction("x1y9", "x1y1")
+
+    reactor.addReaction("a4b4", "a3 b3")
 
 
-    numElements = max(elementSequence) + 1 + 1
+    numElements = 5
     reactor.setNumElements(numElements)
-    numStates = 9
+    numStates = 10
     reactor.setNumStates(numStates)
 
 
@@ -156,7 +167,7 @@ def initiateReactorDuplicator(reactor):
         reactor.getBondGraph().add_edge(atoms[i].getId(), atoms[i+1].getId())
 
     for atom in range(300):
-        reactor.addAtom(Atom(random.randrange(numElements), 0), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
+        reactor.addAtom(Atom(random.randrange(reactor.getNumElements()), 0), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
 
 def initiateReactor(reactor):
     initiateReactorDuplicator(reactor)
@@ -167,10 +178,10 @@ def incrementState(reactor):
     reactor.move()
     if random.random() < 0:
         return
-    if sum([sum([0 if cell is None else 1 for cell in row]) for row in reactor.getCells()]) < reactor.getSize()[0] * reactor.getSize()[1] / 8:
+    if sum([sum([0 if cell is None else 1 for cell in row]) for row in reactor.getCells()]) < reactor.getSize()[0] * reactor.getSize()[1] / 3:
         # reactor.addAtom(Atom(random.randrange(numElements), random.randrange(numStates)),
         #                 (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
-        reactor.addAtom(Atom(random.randrange(numElements), 0),
+        reactor.addAtom(Atom(random.randrange(reactor.getNumElements()), 0),
                         (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
     if random.random() < 0:
         reactor.addAtom(Atom(2, 5), (random.randrange(reactor.getSize()[0]), random.randrange(reactor.getSize()[1])))
@@ -228,17 +239,17 @@ def getCellBoundingBox(x, y):
 def colorWheel(hue, numberOfSaturations):
     saturations = [1.0 * (n + 1) / (numberOfSaturations + 1) for n in range(numberOfSaturations + 1)]
     rgb = [colorsys.hsv_to_rgb(hue, saturation, 1) for saturation in saturations]
-    return [(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)) for color in rgb]
+    return [(int(color[0] * 255), int(color[1] * 255), int(color[2] * 255)) for color in rgb[1:]]
 
 def manhattanDist(point1, point2):
     return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
-stateColors = [colorWheel(1.0 * element / reactor.getNumElements(), reactor.getNumStates()) for element in range(reactor.getNumElements())]
 
 
 # Loop until the user clicks close button
 done = False
 initiateReactor(reactor)
+stateColors = [colorWheel(1.0 * element / reactor.getNumElements(), reactor.getNumStates()) for element in range(reactor.getNumElements())]
 
 pylab.show()
 while done == False:
@@ -261,7 +272,6 @@ while done == False:
             nodelist=nodesToDraw,
             labels=dict((atom.getId(), atom.getReactionKey()) for atom in reactor.getAtomsById() if atom.getId() in nodesToDraw))
         pylab.draw()
-        plt.pause(1)
         drawState()
         drawBonds()
 
