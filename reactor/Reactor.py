@@ -199,10 +199,10 @@ class Reactor(object):
 
             if potentialReactant in thisCell.getBonds():
                 reactionKey = thisCell.getReactionKey() + potentialReactant.getReactionKey()
-                reaction = self.reactions.get(reactionKey)
             else:
                 reactionKey = thisCell.getReactionKey() + " " + potentialReactant.getReactionKey()
-                reaction = self.reactions.get(reactionKey)
+
+            reaction = self.reactions.get(reactionKey)
 
             if reaction is not None:
                 productStates = reaction.getProductStates()

@@ -1,9 +1,8 @@
 import pygame
 import colorsys
 import random
-import networkx as nx
+import networkx.drawing.nx_pylab as nx
 import matplotlib.pyplot as plt
-import networkx as nx
 import pylab
 pylab.ion()
 
@@ -127,14 +126,12 @@ def initiateReactorDuplicator(reactor):
     reactor.addReaction("x7y6", "x7y7")
     reactor.addReaction("b7b4", "b8b4")
     reactor.addReaction("x8y7", "x8y8")
-    reactor.addReaction("x8y9", "x9y9")
-    reactor.addReaction("x1y4", "x1y1")
-    reactor.addReaction("x9a7", "x9a1")
+    reactor.addReaction("x8y4", "x8 y8")
 
-    reactor.setReaction("a9a4", Reaction(1, 1, False))
-    reactor.setReaction("a4a9", Reaction(1, 1, False))
+    reactor.setReaction("a8a4", Reaction(1, 1, False))
+    reactor.setReaction("a4a8", Reaction(1, 1, False))
 
-    reactor.addReaction("x1y9", "x1y1")
+    reactor.addReaction("x1y8", "x1y1")
 
     reactor.addReaction("a4b4", "a3 b3")
 
@@ -250,9 +247,10 @@ def manhattanDist(point1, point2):
 done = False
 initiateReactor(reactor)
 stateColors = [colorWheel(1.0 * element / reactor.getNumElements(), reactor.getNumStates()) for element in range(reactor.getNumElements())]
-
+stateColors01 = [[tuple([component / 255.0 for component in elementColor]) for elementColor in elementColors] for elementColors in stateColors]
 pylab.show()
-while done == False:
+pylab.figure(figsize=(1, 1))
+while not done:
     # write event handlers here
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -266,14 +264,17 @@ while done == False:
         incrementState(reactor)
         pylab.clf()
         nodeDegrees = reactor.getBondGraph().degree()
+        nodeColors = [stateColors01[cell.getType()][cell.getState()] + (1,) for cell in reactor.atomsById]
         nodesToDraw = [nodeIndex for nodeIndex in nodeDegrees if nodeDegrees[nodeIndex] > 0]
         nx.draw_networkx(
             reactor.getBondGraph(),
             nodelist=nodesToDraw,
-            labels=dict((atom.getId(), atom.getReactionKey()) for atom in reactor.getAtomsById() if atom.getId() in nodesToDraw))
+            labels=dict((atom.getId(), atom.getReactionKey()) for atom in reactor.getAtomsById() if atom.getId() in nodesToDraw),
+            node_size=10,
+            node_color=nodeColors)
         pylab.draw()
-        drawState()
-        drawBonds()
+        #drawState()
+        #drawBonds()
 
     pygame.display.update()
     # run at 20 fps
